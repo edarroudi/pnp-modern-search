@@ -7,6 +7,7 @@ import ISearchFiltersWebPartProps from '../webparts/searchFilters/ISearchFilters
 import ISearchResultsWebPartProps from '../webparts/searchResults/ISearchResultsWebPartProps';
 import * as commonStrings from 'CommonStrings';
 import { WebPartContext } from '@microsoft/sp-webpart-base';
+import { ISearchBoxWebPartProps } from '../webparts/searchBox/ISearchBoxWebPartProps';
 
 export class LayoutHelper {
 
@@ -19,7 +20,7 @@ export class LayoutHelper {
      * @param layoutDefinitions the available layout definitions
      * @returns the data source provider instance
      */
-    public static async getLayoutInstance(rootScope: ServiceScope, context: WebPartContext, properties: ISearchFiltersWebPartProps | ISearchResultsWebPartProps, layoutKey: string, layoutDefinitions: ILayoutDefinition[]): Promise<ILayout> {
+    public static async getLayoutInstance(rootScope: ServiceScope, context: WebPartContext, properties: ISearchFiltersWebPartProps | ISearchResultsWebPartProps |ISearchBoxWebPartProps, layoutKey: string, layoutDefinitions: ILayoutDefinition[]): Promise<ILayout> {
 
         let layout: ILayout = undefined;
         let serviceKey: ServiceKey<ILayout> = undefined;
@@ -63,6 +64,17 @@ export class LayoutHelper {
                     serviceKey = ServiceKey.create<ILayout>('PnPModernSearchFiltersDebugLayout', DebugFilterLayout);
                     break;
 
+                 // Filters Debug
+                 case BuiltinLayoutsKeys.SearchBoxDebug:
+
+                    const { DebugSearchBoxLayout } = await import(
+                        /* webpackChunkName: 'pnp-modern-search-searchBox-debug-layout' */
+                        '../layouts/searchBox/debug/DebugSearchBoxLayout'
+                    );
+
+                    serviceKey = ServiceKey.create<ILayout>('PnPModernSearchBoxDebugLayout', DebugSearchBoxLayout);
+                    break;
+
                 // Results Custom
                 case BuiltinLayoutsKeys.ResultsCustom:
 
@@ -83,6 +95,17 @@ export class LayoutHelper {
                     );
 
                     serviceKey = ServiceKey.create<ILayout>('PnPModernSearchFiltersCustomLayout', FiltersCustomLayout);
+                    break;
+
+                       // Filters Custom
+                case BuiltinLayoutsKeys.SearchBoxCustom:
+
+                    const { SearchBoxCustomLayout } = await import(
+                        /* webpackChunkName: 'pnp-modern-search-searchBox-custom-layout' */
+                        '../layouts/searchBox/custom/SearchBoxCustomLayout'
+                    );
+
+                    serviceKey = ServiceKey.create<ILayout>('PnPModernSearchBoxCustomLayout', SearchBoxCustomLayout);
                     break;
 
                 // Cards
@@ -160,6 +183,17 @@ export class LayoutHelper {
                     );
 
                     serviceKey = ServiceKey.create<ILayout>('PnPModernSearchPanelLayout', PanelFilterLayout);
+                    break;
+
+                 // Panel
+                 case BuiltinLayoutsKeys.SearchBoxDefault:
+
+                    const { DefaultSearchBoxLayout } = await import(
+                        /* webpackChunkName: 'pnp-modern-search-searchBox-default-layout' */
+                        '../layouts/searchBox/default/DefaultSearchBoxLayout'
+                    );
+
+                    serviceKey = ServiceKey.create<ILayout>('PnPModernSearchDefaulSearchBoxLayout', DefaultSearchBoxLayout);
                     break;
 
                 // Custom layout scenario

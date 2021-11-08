@@ -1,0 +1,52 @@
+<content id="data-content">
+    
+    <style>
+
+       .horizontal {
+			display: flex;
+			flex-wrap: wrap;
+            justify-content: space-between;
+		}
+    
+		.filter--value {
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			display: flex;
+			align-items: center;
+		}
+
+		.filter--message {
+			padding: 10px;
+		}
+		
+	    .filter--name {
+			font-weight: {{@root.theme.fonts.large.fontWeight}};
+			font-size: {{@root.theme.fonts.large.fontSize}};
+			margin-bottom: 10px;
+		}
+
+		/* Assign the correct size % ratio according to the number of wanted cards on a single row. We use flexbox instead of static grid to deal with SharePoint canvas sections*/
+		.filter {
+            flex-grow: 1;
+            flex-shrink: 1;
+            min-width: 206px; /* Min width of the Office UI Fabric document card */
+            flex-basis: {{@root.properties.layoutProperties.columnSizePercentage}}%;
+        }   
+
+		pnp-filtercheckbox {
+			max-width: 100%;
+		}
+				        		                
+    </style>
+
+    <div class="template horizontal">  
+
+		<pnp-search-box-auto-complete 
+		data-instance-id="{{@root.instanceId}}" 				
+		data-theme-variant="{{JSONstringify @root.theme}}"
+	/>
+
+	<code>{{JSONstringify @root 2}}</code>
+	</div>
+</content>

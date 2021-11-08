@@ -2,12 +2,20 @@ import * as React from 'react';
 import styles from '../SearchBoxContainer.module.scss';
 import { ISearchBoxAutoCompleteState } from './ISearchBoxAutoCompleteState';
 import { ISearchBoxAutoCompleteProps } from './ISearchBoxAutoCompleteProps';
-import { Spinner, SpinnerSize, FocusZone, FocusZoneDirection, SearchBox, IconButton, Label, Icon, IconType, ISearchBox } from 'office-ui-fabric-react';
+import { Spinner, SpinnerSize, FocusZone, FocusZoneDirection, SearchBox, IconButton, Label, Icon, IconType, ISearchBox, ISearchBoxState } from 'office-ui-fabric-react';
 import { ITheme } from 'office-ui-fabric-react/lib/Styling';
 import { isEqual, debounce } from '@microsoft/sp-lodash-subset';
-import { ISuggestion } from '@pnp/modern-search-extensibility';
+import { BaseWebComponent, ISuggestion, ISuggestionProvider, ITokenService } from '@pnp/modern-search-extensibility';
 import * as webPartStrings from 'SearchBoxWebPartStrings';
 import * as DOMPurify from 'dompurify';
+import * as ReactDOM from 'react-dom';
+import { ServiceKey, ServiceScope } from '@microsoft/sp-core-library';
+import { TemplateService } from '../../../../services/templateService/TemplateService';
+import { ITemplateService } from '../../../../services/templateService/ITemplateService';
+import { IReadonlyTheme } from '@microsoft/sp-component-base';
+import { PageOpenBehavior, QueryPathBehavior, UrlHelper } from '../../../../helpers/UrlHelper';
+import { BuiltinTokenNames, TokenService } from '../../../../services/tokenService/TokenService';
+import { ThemeContext } from '../SearchBoxContainer';
 
 const SUGGESTION_CHAR_COUNT_TRIGGER = 2;
 const SUGGESTION_UPDATE_DEBOUNCE_DELAY = 200;
@@ -443,4 +451,250 @@ export default class SearchBoxAutoComplete extends React.Component<ISearchBoxAut
         );
     }
 
+}
+
+
+
+export interface ISearchBoxAutoCompleteProps2 {
+    placeholderText: string;
+    suggestionProviders: ISuggestionProvider[];
+    inputValue: string;
+    // onSearch: (queryText: string, isReset?: boolean) => void;
+    domElement: HTMLElement;
+  
+    /**
+     * The number of suggestions to display for each group
+     */
+    numberOfSuggestionsPerGroup: number;
+  
+    /**
+     * The current theme variant
+     */
+    themeVariant: IReadonlyTheme | undefined;
+
+    /**
+     * Flag indicating in the search query text should be sent to an other page
+     */
+     searchInNewPage: boolean;
+
+     /**
+      * The page URL to send the query text
+      */
+     pageUrl: string;
+ 
+     /**
+      * Whether to use an URL fragment (#) or query string parameter to pass the query text
+      */
+     queryPathBehavior: QueryPathBehavior;
+ 
+     /**
+      * The query string parameter to use to send the query text
+      */
+     queryStringParameter: string;
+ 
+     /**
+     * The transformation to apply on the queryText before sending to a different page
+     */
+    inputTemplate: string;
+
+    /**
+     * Flag indicating if the search box should open a new tab or use the current page
+     */
+    openBehavior: PageOpenBehavior;
+
+    tokenService: ITokenService;
+    
+  }
+
+  export interface ISearchBoxAutoCompleteState2 {
+    
+    /**
+     * The current value of the input string
+     */
+    searchInputValue: string;
+}
+
+  
+class DefaultSearchBoxAutoComplete  extends React.Component<ISearchBoxAutoCompleteProps2, ISearchBoxAutoCompleteState2> {
+    
+    public constructor(props: ISearchBoxAutoCompleteProps2) {
+
+        super(props);
+        
+        this.state = {
+            searchInputValue: (props.inputValue) ? decodeURIComponent(props.inputValue) : ''
+        };
+    }
+     
+    /**
+     * Handler when a user enters new keywords
+     * @param queryText The query text entered by the user
+     */
+     public async _onSearch(queryText: string, isReset: boolean = false) {
+
+        // Don't send empty value
+        if (queryText || isReset) {
+
+            this.setState({
+                searchInputValue: queryText
+            });
+
+            if (this.props.searchInNewPage && !isReset && this.props.pageUrl) {
+
+                this.props.tokenService.setTokenValue(BuiltinTokenNames.inputQueryText, queryText);
+                queryText = await this.props.tokenService.resolveTokens(this.props.inputTemplate);
+
+                const urlEncodedQueryText = encodeURIComponent(queryText);
+
+                const searchUrl = new URL(this.props.pageUrl);
+                let newUrl;
+
+                if (this.props.queryPathBehavior === QueryPathBehavior.URLFragment) {
+                    searchUrl.hash = urlEncodedQueryText;
+                    newUrl = searchUrl.href;
+                }
+                else {
+                    newUrl = UrlHelper.addOrReplaceQueryStringParam(searchUrl.href, this.props.queryStringParameter, queryText);
+                }
+
+                // Send the query to the new page
+                const behavior = this.props.openBehavior === PageOpenBehavior.NewTab ? '_blank' : '_self';
+                window.open(newUrl, behavior);
+
+            } else {
+
+                // Notify the dynamic data controller
+                // this.props.onSearch(queryText);
+                console.log("MISSING: ONSEARH GLOB");
+            }
+        }
+    }
+
+    public render(): React.ReactElement<ISearchBoxAutoCompleteProps2> {
+
+        return <SearchBoxAutoComplete 
+        placeholderText={this.props.placeholderText} 
+        suggestionProviders={this.props.suggestionProviders} 
+        inputValue={this.props.inputValue} 
+        onSearch={this._onSearch} 
+        domElement={this.props.domElement} 
+        numberOfSuggestionsPerGroup={this.props.numberOfSuggestionsPerGroup} 
+        themeVariant={this.props.themeVariant} />;
+    }
+
+}
+
+class MyClass extends React.Component {
+    public static contextType = ThemeContext;
+    
+    public render() {
+      let value = this.context;
+      /* render something based on the value */
+      console.log("this.context",value);
+      return <SearchBox    />;
+    }
+  }
+
+
+export class SearchBoxAutoCompleteWebComponent extends BaseWebComponent {
+
+  //  static contextType = ThemeContext;
+    
+    public constructor() {
+        super();
+    }
+
+    public async connectedCallback() {
+
+        let props = this.resolveAttributes();
+        let serviceScope: ServiceScope = this._serviceScope; // Default is the root shared service scope regardless the current Web Part 
+        let templateServiceKey: ServiceKey<any> = TemplateService.ServiceKey; // Defaut service key for TemplateService
+
+        if (props.instanceId) {
+
+            // Get the service scope and keys associated to the current Web Part displaying the component
+            serviceScope = this._webPartServiceScopes.get(props.instanceId) ? this._webPartServiceScopes.get(props.instanceId) : serviceScope;
+            templateServiceKey = this._webPartServiceKeys.get(props.instanceId) ? this._webPartServiceKeys.get(props.instanceId).TemplateService : templateServiceKey;
+          }
+
+          
+          const templateService = serviceScope.consume<ITemplateService>(templateServiceKey);
+          const tokenService = serviceScope.consume<ITokenService>(TokenService.ServiceKey);
+
+
+          console.log("Props",props);
+          
+        let searchBox: JSX.Element = null;
+
+        //searchBox = <SearchBox  theme={props.themeVariant}  />;
+searchBox=<MyClass/>;
+        
+        /*searchBox =<DefaultSearchBoxAutoComplete
+            inputValue={"test"} //{this.props.inputValue} //benötigt nur für initiatliserung?
+
+            // onSearch={this._onSearch}       //das könnte auch direkt ausgelagert werden
+            placeholderText={props.placeholderText} //das kann man mitreingeben property
+            suggestionProviders={props.suggestionProviders} //das geht nicht
+            themeVariant={props.themeVariant} //geht
+            domElement={props.domElement} //über code möglich
+            numberOfSuggestionsPerGroup={props.numberOfSuggestionsPerGroup} //property
+            // onSearch={undefined} 
+            searchInNewPage={props.searchInNewPage} 
+            pageUrl={props.pageUrl}
+            queryPathBehavior={props.queryPathBehavior} 
+            queryStringParameter={props.queryStringParameter} 
+            inputTemplate={props.inputTemplate} 
+            openBehavior={props.openBehavior} 
+            tokenService={tokenService}/> ;
+*/
+        /*
+        filterComboBox = <SearchBoxAutoComplete
+                            placeholderText={undefined} 
+                            suggestionProviders={undefined} 
+                            inputValue={undefined} 
+                            onSearch={undefined} 
+                            domElement={undefined} 
+                            numberOfSuggestionsPerGroup={undefined} 
+                            themeVariant={undefined} 
+                            {...props}            
+                            />;*/
+
+                                /*
+        inputValue={this.props.inputValue}
+                onSearch={this._onSearch}
+                placeholderText={this.props.placeholderText}
+                suggestionProviders={this.props.suggestionProviders}
+                themeVariant={this.props.themeVariant}
+                domElement={this.props.domElement}
+                numberOfSuggestionsPerGroup={this.props.numberOfSuggestionsPerGroup}
+                            */
+        /*
+            onChange={((filterValues: IDataFilterValueInfo[], forceUpdate?: boolean) => {
+                // Bubble event through the DOM
+                this.dispatchEvent(new CustomEvent(ExtensibilityConstants.EVENT_FILTER_UPDATED, {
+                    detail: {
+                        filterName: props.filterName,
+                        filterValues: filterValues,
+                        instanceId: props.instanceId,
+                        forceUpdate: forceUpdate
+                    } as IDataFilterInfo,
+                    bubbles: true,
+                    cancelable: true
+                }));
+            }).bind(this)}
+            onClear={(() => {
+                // Bubble event through the DOM
+                this.dispatchEvent(new CustomEvent(ExtensibilityConstants.EVENT_FILTER_CLEAR_ALL, {
+                    detail: {
+                        filterName: props.filterName,
+                        instanceId: props.instanceId
+                    },
+                    bubbles: true,
+                    cancelable: true
+                }));
+            }).bind(this)}*/
+        
+
+        ReactDOM.render(searchBox, this);
+    }
 }

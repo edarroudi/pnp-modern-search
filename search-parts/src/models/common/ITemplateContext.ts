@@ -3,6 +3,7 @@ import { IReadonlyTheme } from '@microsoft/sp-component-base';
 import ISearchResultsWebPartProps from "../../webparts/searchResults/ISearchResultsWebPartProps";
 import { SPSite, SPWeb, SPUser, SPList, SPListItem, CultureInfo } from "@microsoft/sp-page-context";
 import ISearchFiltersWebPartProps from "../../webparts/searchFilters/ISearchFiltersWebPartProps";
+import { ISearchBoxWebPartProps } from "../../webparts/searchBox/ISearchBoxWebPartProps";
 
 /**
  * Represents the context passed to the Handlebars template (Search Results)
@@ -165,4 +166,33 @@ export interface ISearchFiltersTemplateContext {
      * The filter Web Part properties
      */
     properties: ISearchFiltersWebPartProps;
+}
+
+
+/**
+ * Represents the context passed to the Handlebars template (SearchBox)
+ */
+ export interface ISearchBoxTemplateContext {
+
+    /**
+     * The Web Part instance ID
+     */
+    instanceId: string;
+
+    /**
+     * Current theme variables
+     */
+    theme: IReadonlyTheme;
+
+    /**
+     * Localized strings that can be used in the Web Part
+     */
+    strings: any;
+
+    /**
+     * The searchbox Web Part properties
+     */
+    properties: ISearchBoxWebPartProps;
+
+    onSearch(queryText: string, isReset: boolean):void;
 }

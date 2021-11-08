@@ -77,4 +77,30 @@ export interface ISearchBoxWebPartProps extends IBaseWebPartProps {
      * The extensibility configuraion to load
      */
     extensibilityLibraryConfiguration: IExtensibilityConfiguration[];
+
+    /**
+    * Content of the template if customized inline (i.e. without external file of custom layout)
+    */
+    inlineTemplateContent: string;
+
+    /**
+     * External template URL
+     */
+    externalTemplateUrl: string;
+
+    /**
+     * The selected layout key
+     */
+    selectedLayoutKey: string;
+
+    /**
+     * The layout properties
+     */
+    layoutProperties: {
+
+        /**
+         * Any other property from layouts (builtin + custom)
+         */
+        [key: string]: any
+    };
 }

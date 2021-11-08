@@ -1,9 +1,9 @@
 import * as React from 'react';
 import * as ReactDom from 'react-dom';
-import { Version, ServiceKey, Text } from '@microsoft/sp-core-library';
+import { Version, ServiceKey, Text, DisplayMode, Log } from '@microsoft/sp-core-library';
 import { GlobalSettings } from 'office-ui-fabric-react';
 import { IWebPartPropertiesMetadata } from '@microsoft/sp-webpart-base';
-import { uniqBy } from '@microsoft/sp-lodash-subset';
+import { isEmpty, isEqual, uniqBy } from '@microsoft/sp-lodash-subset';
 import { DynamicProperty } from "@microsoft/sp-component-base";
 import * as webPartStrings from 'SearchBoxWebPartStrings';
 import {
@@ -17,7 +17,8 @@ import {
     PropertyPaneToggle,
     DynamicDataSharedDepth,
     IPropertyPanePage,
-    IPropertyPaneGroup
+    IPropertyPaneGroup,
+    PropertyPaneChoiceGroup
 } from "@microsoft/sp-property-pane";
 import SearchBoxContainer from './components/SearchBoxContainer';
 import { ISearchBoxContainerProps } from './components/ISearchBoxContainerProps';
@@ -29,7 +30,7 @@ import { ISearchBoxWebPartProps } from './ISearchBoxWebPartProps';
 import { UrlHelper, PageOpenBehavior, QueryPathBehavior } from '../../helpers/UrlHelper';
 import * as commonStrings from 'CommonStrings';
 import { ServiceScope } from '@microsoft/sp-core-library';
-import { ISuggestionProviderDefinition, BaseSuggestionProvider } from '@pnp/modern-search-extensibility';
+import { ISuggestionProviderDefinition, BaseSuggestionProvider, ILayoutDefinition, LayoutType, ILayout, IComponentDefinition } from '@pnp/modern-search-extensibility';
 import { AvailableSuggestionProviders, BuiltinSuggestionProviderKeys } from '../../providers/AvailableSuggestionProviders';
 import { ISuggestionProvider } from '@pnp/modern-search-extensibility';
 import { ServiceScopeHelper } from '../../helpers/ServiceScopeHelper';
@@ -40,6 +41,11 @@ import { Constants } from '../../common/Constants';
 import { ITokenService } from '@pnp/modern-search-extensibility';
 import { BuiltinTokenNames, TokenService } from '../../services/tokenService/TokenService';
 import { BaseWebPart } from '../../common/BaseWebPart';
+import { AvailableLayouts, BuiltinLayoutsKeys } from '../../layouts/AvailableLayouts';
+import { ITemplateService } from '../../services/templateService/ITemplateService';
+import { AvailableComponents } from '../../components/AvailableComponents';
+import { LayoutHelper } from '../../helpers/LayoutHelper';
+import { TemplateService } from '../../services/templateService/TemplateService';
 
 export default class SearchBoxWebPart extends BaseWebPart<ISearchBoxWebPartProps> implements IDynamicDataCallables {
 
@@ -54,6 +60,9 @@ export default class SearchBoxWebPart extends BaseWebPart<ISearchBoxWebPartProps
     private _propertyFieldCollectionData: any = null;
     private _propertyPanePropertyEditor = null;
     private _customCollectionFieldType: any = null;
+    private _placeholderComponent: any = null;
+    private _propertyFieldCodeEditor: any = null;
+    private _propertyFieldCodeEditorLanguages: any = null;
 
     /**
      * The dynamic data service instance
@@ -87,6 +96,37 @@ export default class SearchBoxWebPart extends BaseWebPart<ISearchBoxWebPartProps
      */
     private tokenService: ITokenService;
 
+    /**
+     * Properties to avoid to recreate instances every render
+     */
+    private lastLayoutKey: string;
+
+    /**
+     * The selected layout for the Web Part
+     */
+    private layout: ILayout;
+
+    /**
+     * The template content to display
+     */
+    private templateContentToDisplay: string;
+
+    /**
+     * The template service instance
+     */
+    private templateService: ITemplateService = undefined;
+
+
+    /**
+     * The available layout definitions (not instanciated)
+     */
+    private availableLayoutDefinitions: ILayoutDefinition[] = AvailableLayouts.BuiltinLayouts.filter(layout => { return layout.type === LayoutType.SearchBox; });
+
+    /**
+     * The available web component definitions (not registered yet)
+     */
+    private availableWebComponentDefinitions: IComponentDefinition<any>[] = AvailableComponents.BuiltinComponents;
+
     constructor() {
         super();
 
@@ -109,7 +149,20 @@ export default class SearchBoxWebPart extends BaseWebPart<ISearchBoxWebPartProps
         this._bindHashChange();
         this._handleQueryStringChange();
 
+        if (this.displayMode === DisplayMode.Edit) {
+            const { Placeholder } = await import(
+                /* webpackChunkName: 'pnp-modern-search-property-pane' */
+                '@pnp/spfx-controls-react/lib/Placeholder'
+            );
+            this._placeholderComponent = Placeholder;
+        }
+
         this.context.dynamicDataSourceManager.initializeSource(this);
+
+        // Register Web Components in the global page context. We need to do this BEFORE the template processing to avoid race condition.
+        // Web components are only defined once.
+        // We need to register components here in the case where the Data Visualizer WP is not present on the page
+        await this.templateService.registerWebComponents(this.availableWebComponentDefinitions, this.instanceId);
 
         return super.onInit();
     }
@@ -118,12 +171,18 @@ export default class SearchBoxWebPart extends BaseWebPart<ISearchBoxWebPartProps
 
         try {
 
-            // Reset the error message every time
-            this.errorMessage = undefined;
-
             // Initialize provider instances
             this._selectedCustomProviders = await this.initializeSuggestionProviders(this.properties.suggestionProviderConfiguration);
 
+            // Determine the template content to display
+            // In the case of an external template is selected, the render is done asynchronously waiting for the content to be fetched
+            await this.initTemplate();
+
+            // Get and initialize layout instance if different (i.e avoid to create a new instance every time)
+            if (this.lastLayoutKey !== this.properties.selectedLayoutKey) {
+                this.layout = await LayoutHelper.getLayoutInstance(this.webPartInstanceServiceScope, this.context, this.properties, this.properties.selectedLayoutKey, this.availableLayoutDefinitions);
+                this.lastLayoutKey = this.properties.selectedLayoutKey;
+            }
         } catch (error) {
             // Catch instanciation or wrong definition errors for extensibility scenarios
             this.errorMessage = error.message ? error.message : error;
@@ -140,48 +199,6 @@ export default class SearchBoxWebPart extends BaseWebPart<ISearchBoxWebPartProps
 
         let renderRootElement: JSX.Element = null;
 
-        let inputValue = "";
-        if (this.properties.queryText && !this.properties.queryText.isDisposed) {
-            try {
-                inputValue = this.properties.queryText.tryGetValue();
-                if (inputValue !== undefined) {
-                    inputValue = decodeURIComponent(inputValue);
-                }
-
-            } catch (error) {
-                // Likely issue when q=%25 in spfx
-            }
-        }
-
-        if (inputValue && typeof (inputValue) === 'string') {
-
-            // Notify subscriber a new value if available
-            this._searchQueryText = decodeURIComponent(inputValue);
-
-            // Set the input query text globally for the page. There can be only one input query text submitted at a time even if multiple search box components are on the page
-            GlobalSettings.setValue(BuiltinTokenNames.inputQueryText, this._searchQueryText);
-
-            this.context.dynamicDataSourceManager.notifyPropertyChanged(ComponentType.SearchBox);
-        }
-
-        renderRootElement = React.createElement(SearchBoxContainer, {
-            domElement: this.domElement,
-            enableQuerySuggestions: this.properties.enableQuerySuggestions,
-            inputValue: this._searchQueryText,
-            openBehavior: this.properties.openBehavior,
-            pageUrl: this.properties.pageUrl,
-            placeholderText: this.properties.placeholderText,
-            queryPathBehavior: this.properties.queryPathBehavior,
-            queryStringParameter: this.properties.queryStringParameter,
-            inputTemplate: this.properties.inputTemplate,
-            searchInNewPage: this.properties.searchInNewPage,
-            themeVariant: this._themeVariant,
-            onSearch: this._onSearch,
-            suggestionProviders: this._selectedCustomProviders,
-            numberOfSuggestionsPerGroup: this.properties.numberOfSuggestionsPerGroup,
-            tokenService: this.tokenService
-        } as ISearchBoxContainerProps);
-
         // Error message
         if (this.errorMessage) {
             renderRootElement = React.createElement(MessageBar, {
@@ -190,6 +207,71 @@ export default class SearchBoxWebPart extends BaseWebPart<ISearchBoxWebPartProps
                 target: '_blank',
                 href: this.properties.documentationLink
             }, commonStrings.General.Resources.PleaseReferToDocumentationMessage));
+        }
+        else if (this.templateContentToDisplay) {
+            let inputValue = "";
+            if (this.properties.queryText && !this.properties.queryText.isDisposed) {
+                try {
+                    inputValue = this.properties.queryText.tryGetValue();
+                    if (inputValue !== undefined) {
+                        inputValue = decodeURIComponent(inputValue);
+                    }
+
+                } catch (error) {
+                    // Likely issue when q=%25 in spfx
+                }
+            }
+
+            if (inputValue && typeof (inputValue) === 'string') {
+
+                // Notify subscriber a new value if available
+                this._searchQueryText = decodeURIComponent(inputValue);
+
+                // Set the input query text globally for the page. There can be only one input query text submitted at a time even if multiple search box components are on the page
+                GlobalSettings.setValue(BuiltinTokenNames.inputQueryText, this._searchQueryText);
+
+                this.context.dynamicDataSourceManager.notifyPropertyChanged(ComponentType.SearchBox);
+            }
+
+            renderRootElement = React.createElement(SearchBoxContainer, {
+                domElement: this.domElement,
+                enableQuerySuggestions: this.properties.enableQuerySuggestions,
+                inputValue: this._searchQueryText,
+                openBehavior: this.properties.openBehavior,
+                pageUrl: this.properties.pageUrl,
+                placeholderText: this.properties.placeholderText,
+                queryPathBehavior: this.properties.queryPathBehavior,
+                queryStringParameter: this.properties.queryStringParameter,
+                inputTemplate: this.properties.inputTemplate,
+                searchInNewPage: this.properties.searchInNewPage,
+                themeVariant: this._themeVariant,
+                onSearch: this._onSearch,
+                suggestionProviders: this._selectedCustomProviders,
+                numberOfSuggestionsPerGroup: this.properties.numberOfSuggestionsPerGroup,
+                tokenService: this.tokenService,
+                instanceId:this.instanceId,
+                templateContent: this.templateContentToDisplay,
+                selectedLayoutKey: this.properties.selectedLayoutKey,
+                properties: JSON.parse(JSON.stringify(this.properties)),
+                templateService: this.templateService,
+            } as ISearchBoxContainerProps);
+        } else {
+            if (this.displayMode === DisplayMode.Edit) {
+                const placeholder: React.ReactElement<any> = React.createElement(
+                    this._placeholderComponent,
+                    {
+                        iconName: 'Search',
+                        iconText: webPartStrings.General.PlaceHolder.IconText,
+                        description: webPartStrings.General.PlaceHolder.Description,
+                        buttonLabel: webPartStrings.General.PlaceHolder.ConfigureBtnLabel,
+                        onConfigure: () => { this.context.propertyPane.open(); }
+                    }
+                );
+                renderRootElement = placeholder;
+            } else {
+                renderRootElement = null;
+                Log.verbose(`[SearchResultsWebPart.renderCompleted]`, `The 'renderRootElement' was null during render.`, this.webPartInstanceServiceScope);
+            }
         }
 
         ReactDom.render(renderRootElement, this.domElement);
@@ -247,6 +329,10 @@ export default class SearchBoxWebPart extends BaseWebPart<ISearchBoxWebPartProps
                 displayGroupsAsAccordion: true
             },
             {
+                groups: this.getStylingPageGroups(),
+                displayGroupsAsAccordion: true
+            },
+            {
                 groups: [
                     {
                         groupName: webPartStrings.PropertyPane.AvailableConnectionsGroup.GroupName,
@@ -289,6 +375,14 @@ export default class SearchBoxWebPart extends BaseWebPart<ISearchBoxWebPartProps
 
     protected async loadPropertyPaneResources(): Promise<void> {
 
+        const { PropertyFieldCodeEditor, PropertyFieldCodeEditorLanguages } = await import(
+            /* webpackChunkName: 'pnp-modern-search-property-pane' */
+            '@pnp/spfx-property-controls/lib/propertyFields/codeEditor'
+        );
+
+        this._propertyFieldCodeEditor = PropertyFieldCodeEditor;
+        this._propertyFieldCodeEditorLanguages = PropertyFieldCodeEditorLanguages;
+
         const { PropertyFieldCollectionData, CustomCollectionFieldType } = await import(
             /* webpackChunkName: 'pnp-modern-search-property-pane' */
             '@pnp/spfx-property-controls/lib/PropertyFieldCollectionData'
@@ -301,6 +395,18 @@ export default class SearchBoxWebPart extends BaseWebPart<ISearchBoxWebPartProps
             '@pnp/spfx-property-controls/lib/PropertyPanePropertyEditor'
         );
         this._propertyPanePropertyEditor = PropertyPanePropertyEditor;
+    }
+
+    /**
+     * Returns layout template options if any
+    */
+    private getLayoutTemplateOptions(): IPropertyPaneField<any>[] {
+
+        if (this.layout) {
+            return this.layout.getPropertyPaneFieldsConfiguration([]);
+        } else {
+            return [];
+        }
     }
 
     protected get propertiesMetadata(): IWebPartPropertiesMetadata {
@@ -334,6 +440,34 @@ export default class SearchBoxWebPart extends BaseWebPart<ISearchBoxWebPartProps
             this.availableCustomProviders = AvailableSuggestionProviders.BuiltinSuggestionProviders;
 
             await this.loadExtensions(cleanConfiguration);
+        }
+
+        // Detect if the layout has been changed to custom
+        if (propertyPath.localeCompare('inlineTemplateContent') === 0) {
+
+            // Automatically switch the option to 'Custom' if a default template has been edited
+            // (meaning the user started from a default template)
+            if (this.properties.inlineTemplateContent && this.properties.selectedLayoutKey !== BuiltinLayoutsKeys.SearchBoxCustom) {
+                this.properties.selectedLayoutKey = BuiltinLayoutsKeys.SearchBoxCustom;
+
+                // Reset also the template URL
+                this.properties.externalTemplateUrl = '';
+
+                // Reset the layout options (otherwise we stay with the previous layout options)
+                if (this.context.propertyPane.isPropertyPaneOpen()) {
+                    this.context.propertyPane.refresh();
+                }
+            }
+        }
+
+        // Notify layout a property has been updated (only if the layout is already selected)
+        if ((propertyPath.localeCompare('selectedLayoutKey') !== 0) && this.layout) {
+            this.layout.onPropertyUpdate(propertyPath, oldValue, newValue);
+        }
+
+        // Reset layout properties
+        if (propertyPath.localeCompare('selectedLayoutKey') === 0 && !isEqual(oldValue, newValue) && this.properties.selectedLayoutKey !== BuiltinLayoutsKeys.SearchBoxDebug.toString()) {
+            this.properties.layoutProperties = {};
         }
 
         this._bindHashChange();
@@ -590,6 +724,112 @@ export default class SearchBoxWebPart extends BaseWebPart<ISearchBoxWebPartProps
     }
 
     /**
+     * Returns property pane 'Styling' page groups
+     */
+    private getStylingPageGroups(): IPropertyPaneGroup[] {
+
+        let stylingFields: IPropertyPaneField<any>[] = [
+            PropertyPaneChoiceGroup('selectedLayoutKey', {
+                options: LayoutHelper.getLayoutOptions(this.availableLayoutDefinitions)
+            })
+        ];
+
+        // We can customize the template for any layout
+        stylingFields.push(
+            this._propertyFieldCodeEditor('inlineTemplateContent', {
+                label: webPartStrings.PropertyPane.LayoutPage.SearchBoxTemplateFieldLabel,
+                panelTitle: webPartStrings.PropertyPane.LayoutPage.SearchBoxTemplatePanelHeader,
+                initialValue: this.templateContentToDisplay,
+                deferredValidationTime: 500,
+                onPropertyChange: this.onPropertyPaneFieldChanged.bind(this),
+                properties: this.properties,
+                disabled: false,
+                key: 'inlineTemplateContentCodeEditor',
+                language: this._propertyFieldCodeEditorLanguages.Handlebars
+            }),
+        );
+
+        // Only show the template external URL for 'Custom' option
+        if (this.properties.selectedLayoutKey === BuiltinLayoutsKeys.SearchBoxCustom) {
+            stylingFields.push(
+                PropertyPaneTextField('externalTemplateUrl', {
+                    label: webPartStrings.PropertyPane.LayoutPage.TemplateUrlFieldLabel,
+                    placeholder: webPartStrings.PropertyPane.LayoutPage.TemplateUrlPlaceholder,
+                    deferredValidationTime: 500,
+                    onGetErrorMessage: this.onTemplateUrlChange.bind(this)
+                }));
+        }
+
+        let groups: IPropertyPaneGroup[] = [
+            {
+                groupName: webPartStrings.PropertyPane.LayoutPage.AvailableLayoutsGroupName,
+                groupFields: stylingFields
+            }
+        ];
+
+        // Add template options if any
+        const layoutOptions = this.getLayoutTemplateOptions();
+        if (layoutOptions.length > 0) {
+            groups.push({
+                groupName: webPartStrings.PropertyPane.LayoutPage.LayoutTemplateOptionsGroupName,
+                groupFields: layoutOptions
+            });
+        }
+
+        return groups;
+    }
+
+
+    /**
+ * Custom handler when the external template file URL
+ * @param value the template file URL value
+ */
+    private async onTemplateUrlChange(value: string): Promise<string> {
+
+        try {
+            // Doesn't raise any error if file is empty (otherwise error message will show on initial load...)
+            if (isEmpty(value)) {
+                return '';
+            }
+            // Resolves an error if the file isn't a valid .htm or .html file
+            else if (!this.templateService.isValidTemplateFile(value)) {
+                return webPartStrings.PropertyPane.LayoutPage.ErrorTemplateExtension;
+            }
+            // Resolves an error if the file doesn't answer a simple head request
+            else {
+                await this.templateService.ensureFileResolves(value);
+                return '';
+            }
+        } catch (error) {
+            return Text.format(webPartStrings.PropertyPane.LayoutPage.ErrorTemplateResolve, error);
+        }
+    }
+
+    /**
+     * Initializes the template according to the property pane current configuration
+     * @returns the template content as a string
+     */
+    private async initTemplate(): Promise<void> {
+
+        // Gets the template content according to the selected key
+        const selectedLayoutTemplateContent = this.availableLayoutDefinitions.filter(layout => { return layout.key === this.properties.selectedLayoutKey; })[0].templateContent;
+
+        if (this.properties.selectedLayoutKey === BuiltinLayoutsKeys.SearchBoxCustom) {
+
+            if (this.properties.externalTemplateUrl) {
+                this.templateContentToDisplay = await this.templateService.getFileContent(this.properties.externalTemplateUrl);
+            } else {
+                this.templateContentToDisplay = this.properties.inlineTemplateContent ? this.properties.inlineTemplateContent : selectedLayoutTemplateContent;
+            }
+
+        } else {
+            this.templateContentToDisplay = selectedLayoutTemplateContent;
+        }
+
+        return;
+    }
+
+    /**
      * Verifies if the string is a correct URL
      * @param value the URL to verify
      */
@@ -622,11 +862,16 @@ export default class SearchBoxWebPart extends BaseWebPart<ISearchBoxWebPartProps
             enabled: true,
             id: Constants.DEFAULT_EXTENSIBILITY_LIBRARY_COMPONENT_ID
         }];
+
+        this.properties.selectedLayoutKey = this.properties.selectedLayoutKey ? this.properties.selectedLayoutKey : BuiltinLayoutsKeys.Vertical;
+        this.properties.inlineTemplateContent = this.properties.inlineTemplateContent ? this.properties.inlineTemplateContent : '';
+        this.properties.layoutProperties = this.properties.layoutProperties ? this.properties.layoutProperties : {};
     }
 
     private initializeWebPartServices(): void {
         this.tokenService = this.context.serviceScope.consume<ITokenService>(TokenService.ServiceKey);
         this.webPartInstanceServiceScope = this.context.serviceScope.startNewChild();
+        this.templateService = this.webPartInstanceServiceScope.createAndProvide(TemplateService.ServiceKey, TemplateService);
         this.dynamicDataService = this.webPartInstanceServiceScope.createDefaultAndProvide(DynamicDataService.ServiceKey);
         this.dynamicDataService.dynamicDataProvider = this.context.dynamicDataProvider;
         this.webPartInstanceServiceScope.finish();

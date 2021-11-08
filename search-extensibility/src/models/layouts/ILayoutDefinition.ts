@@ -37,5 +37,6 @@ export interface ILayoutDefinition {
 
 export enum LayoutType {
     Results = 'ResultsLayout',
-    Filter = 'FiltersLayout'
+    Filter = 'FiltersLayout',
+    SearchBox = "SearchBoxLayout"
 }

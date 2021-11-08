@@ -1,7 +1,13 @@
 define([], function() {
     return {
         General: {
-            DynamicPropertyDefinition: "Search query"
+            DynamicPropertyDefinition: "Search query",
+            PlaceHolder: {
+                EditLabel: "Edit",
+                IconText: "SearchBox by @PnP",
+                Description: "Displays SearchBox",
+                ConfigureBtnLabel: "Configure"
+            }
         },
         PropertyPane: {
             SearchBoxSettingsGroup: {
@@ -40,7 +46,17 @@ define([], function() {
                     PanelDescription: "Add/Remove your custom extensibility library IDs here. You can specify a display name and decide if the library should be loaded or not at startup. Only custom suggestions providers will be loaded here.",
                 }
             },
-            ImportExport: "Import / Export settings"
+            ImportExport: "Import / Export settings",
+            LayoutPage: {
+                AvailableLayoutsGroupName: "Available layouts",
+                LayoutTemplateOptionsGroupName: "Layout options",
+                TemplateUrlFieldLabel: "Use an external template URL",
+                TemplateUrlPlaceholder: "https://myfile.html",
+                ErrorTemplateExtension: "The template must be a valid .htm or .html file",
+                ErrorTemplateResolve: "Unable to resolve the specified template. Error details: '{0}'",
+                SearchBoxTemplateFieldLabel: "Edit searchBox template",
+                SearchBoxTemplatePanelHeader: "Edit searchBox template"
+            }
         },
         SearchBox: {
             DefaultPlaceholder: "Enter your search terms...",

@@ -4,8 +4,10 @@ import * as strings from 'CommonStrings';
 export enum BuiltinLayoutsKeys {
     ResultsDebug = 'ResultsDebug',
     FiltersDebug = 'FiltersDebug',
+    SearchBoxDebug='SearchBoxDebug',
     ResultsCustom = 'ResultsCustom',
     FiltersCustom = 'FiltersCustom',
+    SearchBoxCustom = 'SearchBoxCustom',
     DetailsList = 'DetailsList',
     Cards = 'Cards',
     Slider = 'Slider',
@@ -13,7 +15,8 @@ export enum BuiltinLayoutsKeys {
     People = 'People',
     Vertical = 'Vertical',
     Horizontal = 'Horizontal',
-    Panel = 'Panel'
+    Panel = 'Panel',
+    SearchBoxDefault = 'SearchBoxDefault'
 }
 
 export class AvailableLayouts {
@@ -117,6 +120,30 @@ export class AvailableLayouts {
             type: LayoutType.Results,
             templateContent: require('./results/people/people.html'),
             serviceKey: null // ServiceKey will be created dynamically for builtin layout
-        }
+        },
+        {
+            name: strings.Layouts.Debug.Name,
+            iconName: 'Code',
+            key: BuiltinLayoutsKeys.SearchBoxDebug.toString(),
+            type: LayoutType.SearchBox,
+            templateContent: require('./searchBox/debug/searchBox-debug.html'),
+            serviceKey: null // ServiceKey will be created dynamically for builtin layout
+        },
+        {
+            name: strings.Layouts.Custom.Name,
+            key: BuiltinLayoutsKeys.SearchBoxCustom.toString(),
+            iconName: 'CodeEdit',
+            type: LayoutType.SearchBox,
+            templateContent: require('./searchBox/custom/searchBox-custom.html'),
+            serviceKey: null // ServiceKey will be created dynamically for builtin layout
+        },
+        {
+            name: strings.Layouts.People.Name,
+            key: BuiltinLayoutsKeys.SearchBoxDefault.toString(),
+            iconName: 'List',
+            type: LayoutType.SearchBox,
+            templateContent: require('./searchBox/default/default.html'),
+            serviceKey: null // ServiceKey will be created dynamically for builtin layout
+        },        
     ];
 }

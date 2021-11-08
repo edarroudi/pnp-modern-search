@@ -19,6 +19,7 @@ import { FilterDateIntervalWebComponent } from './filters/FilterDateIntervalComp
 import { PersonaWebComponent } from './PersonaComponent';
 import { PersonaShimmersWebComponent } from './PersonaShimmersComponent';
 import { ImageWebComponent} from './ImageComponent';
+import { SearchBoxAutoCompleteWebComponent } from '../webparts/searchBox/components/SearchBoxAutoComplete/SearchBoxAutoComplete';
 
 export class AvailableComponents {
 
@@ -105,6 +106,10 @@ export class AvailableComponents {
         {
             componentName: 'pnp-img',
             componentClass: ImageWebComponent
-        }
+        },
+        {
+            componentName: 'pnp-search-box-auto-complete',
+            componentClass: SearchBoxAutoCompleteWebComponent
+        }        
     ];
 }

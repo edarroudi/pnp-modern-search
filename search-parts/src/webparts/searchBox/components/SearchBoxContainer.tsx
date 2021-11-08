@@ -8,6 +8,9 @@ import * as webPartStrings from 'SearchBoxWebPartStrings';
 import SearchBoxAutoComplete from './SearchBoxAutoComplete/SearchBoxAutoComplete';
 import styles from './SearchBoxContainer.module.scss';
 import { BuiltinTokenNames } from '../../../services/tokenService/TokenService';
+import { TemplateRenderer } from '../../../controls/TemplateRenderer/TemplateRenderer';
+import * as commonStrings from 'CommonStrings';
+import { ISearchBoxTemplateContext } from '../../../models/common/ITemplateContext';
 
 export default class SearchBoxContainer extends React.Component<ISearchBoxContainerProps, ISearchBoxContainerState> {
 
@@ -136,6 +139,9 @@ export default class SearchBoxContainer extends React.Component<ISearchBoxContai
     public render(): React.ReactElement<ISearchBoxContainerProps> {
         let renderErrorMessage: JSX.Element = null;
 
+        let renderWpContent: JSX.Element = null;
+        let templateContent: string = null;
+        
         if (this.state.errorMessage) {
             renderErrorMessage = <MessageBar messageBarType={MessageBarType.error}
                 dismissButtonAriaLabel='Close'
@@ -149,6 +155,23 @@ export default class SearchBoxContainer extends React.Component<ISearchBoxContai
                 {this.state.errorMessage}</MessageBar>;
         }
 
+      // Content loading
+      templateContent = this.props.templateService.getTemplateMarkup(this.props.templateContent);
+      const templateContext = this.getTemplateContext();
+      renderWpContent =   <TemplateRenderer
+                                key={JSON.stringify(templateContext)}
+                                templateContent={templateContent} 
+                                templateContext={templateContext}
+                                templateService={this.props.templateService}
+                                instanceId={this.props.instanceId}
+                                />;
+
+        return  <ThemeContext.Provider value="dark">
+            <div data-instance-id={this.props.instanceId}>        
+            {renderWpContent}
+            </div></ThemeContext.Provider>;
+
+                                /*
         const renderSearchBox = this.props.enableQuerySuggestions ?
             this.renderSearchBoxWithAutoComplete() :
             this.renderBasicSearchBox();
@@ -157,6 +180,22 @@ export default class SearchBoxContainer extends React.Component<ISearchBoxContai
                 {renderErrorMessage}
                 {renderSearchBox}
             </div>
-        );
+        );*/
     }
+
+     // Build the template context
+  private getTemplateContext(): ISearchBoxTemplateContext {
+
+    return {      
+      instanceId: this.props.instanceId,
+      theme: this.props.themeVariant,
+      strings: ["TODO"],      
+      properties: {
+        ...this.props.properties
+      },
+      onSearch: this._onSearch,      
+    };
+  }
 }
+
+export const ThemeContext = React.createContext('light');

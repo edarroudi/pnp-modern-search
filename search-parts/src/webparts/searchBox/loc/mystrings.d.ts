@@ -1,6 +1,12 @@
 declare interface ISearchBoxWebPartStrings {
     General: {
         DynamicPropertyDefinition: string;
+        PlaceHolder: {
+            EditLabel: string;
+            IconText: string;
+            Description: string;
+            ConfigureBtnLabel: string;
+        }
     },
     PropertyPane: {
         SearchBoxSettingsGroup: {
@@ -39,7 +45,17 @@ declare interface ISearchBoxWebPartStrings {
                 PanelDescription: string;
             }
         },
-        ImportExport: string;
+        ImportExport: string,
+        LayoutPage: {
+            AvailableLayoutsGroupName: string;
+            LayoutTemplateOptionsGroupName: string;
+            TemplateUrlFieldLabel: string;
+            TemplateUrlPlaceholder: string;
+            ErrorTemplateExtension: string;
+            ErrorTemplateResolve: string;
+            SearchBoxTemplateFieldLabel: string;
+            SearchBoxTemplatePanelHeader: string;
+        }
     },
     SearchBox: {
         DefaultPlaceholder: string;

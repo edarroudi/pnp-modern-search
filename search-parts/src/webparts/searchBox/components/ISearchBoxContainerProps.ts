@@ -1,6 +1,8 @@
 import { PageOpenBehavior, QueryPathBehavior } from "../../../helpers/UrlHelper";
 import { IReadonlyTheme } from "@microsoft/sp-component-base";
 import { ISuggestionProvider, ITokenService } from "@pnp/modern-search-extensibility";
+import { ISearchBoxWebPartProps } from "../ISearchBoxWebPartProps";
+import { ITemplateService } from "../../../services/templateService/ITemplateService";
 
 export interface ISearchBoxContainerProps {
 
@@ -58,7 +60,7 @@ export interface ISearchBoxContainerProps {
      * The placeholder text to display in the search box
      */
     placeholderText: string;
-    
+
     /**
      * The Web Part root DOM element
      */
@@ -75,4 +77,29 @@ export interface ISearchBoxContainerProps {
     themeVariant: IReadonlyTheme | undefined;
 
     tokenService: ITokenService;
+
+     /**
+      * The Web Part instance ID
+      */
+    instanceId: string;
+
+    /**
+    * The template content before processing
+    */
+    templateContent: string;
+
+    /**
+     * The selected layout key
+     */
+    selectedLayoutKey: string;
+
+    /**
+     * The Web Part properties so they can be used in Handlebars template
+     */
+    properties: ISearchBoxWebPartProps;
+    /**
+     * A template service instance
+     */
+    templateService: ITemplateService;
+
 }
