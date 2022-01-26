@@ -817,7 +817,7 @@ export class SharePointSearchDataSource extends BaseDataSource<ISharePointSearch
                     refinementFilters = refinementFilters.concat(DataFilterHelper.buildFqlRefinementString(dataContext.filters.selectedFilters, dataContext.filters.filtersConfiguration, this.moment));
                 }
             }
-
+console.log(refinementFilters);
         }
 
         searchQuery.RefinementFilters = refinementFilters;

@@ -60,6 +60,7 @@ export default class SearchFiltersWebPart extends BaseWebPart<ISearchFiltersWebP
     private _propertyFieldCodeEditorLanguages: any = null;
     private _customCollectionFieldType: any = null;
     private _propertyPanePropertyEditor = null;
+    private _textDialogComponent: any = null;
 
     /**
      * Properties to avoid to recreate instances every render
@@ -829,7 +830,29 @@ export default class SearchFiltersWebPart extends BaseWebPart<ISearchFiltersWebP
                                     } as IDropdownProps)
                                 )
                             );
-                        }
+                        },                        
+                    },
+                    {
+                        id: 'groupedRefinerValues',
+                        title: 'grouped',
+                        type: this._customCollectionFieldType.custom,                        
+                        onCustomRender: ((field, value, onUpdate) => {
+                            return (
+                                React.createElement("div", null,
+                                    React.createElement(this._textDialogComponent.TextDialog, {
+                                        language: this._propertyFieldCodeEditorLanguages.Handlebars,
+                                        dialogTextFieldValue: value ? value : 'empty',
+                                        onChanged: (fieldValue) => onUpdate(field.id, fieldValue),
+                                        strings: {
+                                            cancelButtonText: 'cancel',
+                                            dialogButtonText: 'dial',
+                                            dialogTitle: 'title',
+                                            saveButtonText: 'save'
+                                        }
+                                    })
+                                )
+                            );
+                        }).bind(this)                      
                     }
                 ]
             }),
@@ -1058,6 +1081,12 @@ export default class SearchFiltersWebPart extends BaseWebPart<ISearchFiltersWebP
             '@pnp/spfx-property-controls/lib/PropertyPanePropertyEditor'
         );
         this._propertyPanePropertyEditor = PropertyPanePropertyEditor;
+
+         // Code editor component for property pane controls
+         this._textDialogComponent = await import(
+            /* webpackChunkName: 'pnp-modern-search-property-pane' */
+            '../../controls/TextDialog'
+        );
 
         this.propertyPaneConnectionsFields = await this.getConnectionOptionsFields();
     }
