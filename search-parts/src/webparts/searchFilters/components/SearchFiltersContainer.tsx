@@ -252,15 +252,24 @@ export default class SearchFiltersContainer extends React.Component<ISearchFilte
           return value;
         });
 
-        values.push({
-          name: 'testerfan',
-          selected: false,
-          selectedOnce: false,
-          disabled: false,
-          value: 'Or(docx,aspx)',
-          count: 11
-        });
+        console.log(values);
 
+        if (!values.some(_ => _.name === 'testerfan')
+          && values.some(_ => _.name === 'jpg')
+          && values.some(_ => _.name === 'pdf')) {
+          values.push({
+            name: 'testerfan',
+            selected: false,
+            selectedOnce: false,
+            disabled: false,
+            value: `Or(${values.find(_ => _.name === 'jpg').value},${values.find(_ => _.name === 'pdf').value})`,
+            count: 11
+          });
+        }
+        /*  values = values.filter(_ => {
+            return ['pdf', 'docx'].indexOf(_.name) === -1;
+          }
+          );*/
 
         const filterOperator = currentUiFilters[selectedFilterIdx] ? currentUiFilters[selectedFilterIdx].operator : filterConfiguration.operator;
 
