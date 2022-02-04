@@ -97,6 +97,11 @@ export interface ISharePointSearchDataSourceProperties {
     selectedProperties: string[];
 
     /**
+     * The search managed properties in hit highligted,splited with ","
+     */
+    hitHighlightedProperties: string;
+
+    /**
      * The sort fields configuration
      */
     sortList: ISortFieldConfiguration[];
@@ -383,6 +388,17 @@ export class SharePointSearchDataSource extends BaseDataSource<ISharePointSearch
                         label: commonStrings.DataSources.SharePointSearch.EnableLocalizationLabel,
                         onText: commonStrings.DataSources.SharePointSearch.EnableLocalizationOnLabel,
                         offText: commonStrings.DataSources.SharePointSearch.EnableLocalizationOffLabel
+                    }),
+                    new PropertyPaneNonReactiveTextField('dataSourceProperties.hitHighlightedProperties', {
+                        componentKey: `${BuiltinDataSourceProviderKeys.SharePointSearch}-hitHighlightedProperties`,
+                        defaultValue: this.properties.hitHighlightedProperties,
+                        label: commonStrings.DataSources.SharePointSearch.HitHighlightedPropertiesFieldLabel,
+                        placeholderText: `ex: Department,UserName`,
+                        multiline: false,
+                        allowEmptyValue: true,
+                        description: commonStrings.DataSources.SharePointSearch.HitHighlightedPropertiesFieldDescription,
+                        applyBtnText: commonStrings.DataSources.SharePointSearch.ApplyQueryTemplateBtnText,
+                        rows: 1
                     })
                 ]
             }
@@ -402,16 +418,6 @@ export class SharePointSearchDataSource extends BaseDataSource<ISharePointSearch
             this.properties.resultSourceId = (newValue as IComboBoxOption).key as string;
             this.context.propertyPane.refresh();
             this.render();
-        }
-    }
-
-    public onPropertyUpdate(propertyPath: string, oldValue: any, newVlue: any) {
-
-        if (propertyPath.localeCompare('dataSourceProperties.enableLocalization') === 0 && this.properties.enableLocalization) {
-
-            if (this.properties.selectedProperties.indexOf('UniqueID') === -1) {
-                this.properties.selectedProperties = update(this.properties.selectedProperties, { $push: ['UniqueID'] });
-            }
         }
     }
 
@@ -516,6 +522,7 @@ export class SharePointSearchDataSource extends BaseDataSource<ISharePointSearch
                 'DefaultEncodingURL',
                 'FileType',
                 'HitHighlightedSummary',
+                'HitHighlightedProperties',
                 'AuthorOWSUSER',
                 'owstaxidmetadataalltagsinfo',
                 'Created',
@@ -537,6 +544,7 @@ export class SharePointSearchDataSource extends BaseDataSource<ISharePointSearch
             ];
         this.properties.resultSourceId = this.properties.resultSourceId !== undefined ? this.properties.resultSourceId : BuiltinSourceIds.LocalSharePointResults;
         this.properties.sortList = this.properties.sortList !== undefined ? this.properties.sortList : [];
+        this.properties.hitHighlightedProperties = this.properties.hitHighlightedProperties ? this.properties.hitHighlightedProperties : '';
     }
 
     private getBuiltinSourceIdOptions(): IComboBoxOption[] {
@@ -840,6 +848,11 @@ console.log(refinementFilters);
             searchQuery.QueryTemplate = `${searchQuery.QueryTemplate} (ModernAudienceAadObjectIds:{User.Audiences} OR NOT IsAudienceTargeted:true)`;
         }
 
+        // HitHighlighted Properties
+        if (this.properties.hitHighlightedProperties.length > 0) {
+            searchQuery.HitHighlightedProperties = this.properties.hitHighlightedProperties.split(",");
+        }
+
         return searchQuery;
     }
 
@@ -1120,7 +1133,7 @@ console.log(refinementFilters);
         let localizedTerms = [];
 
         // Step #1: identify all taxonomy like properties and gather corresponding term ids for such properties.
-        rawResults.forEach((result) => {
+        rawResults.forEach((result, index) => {
 
             let properties = [];
 
@@ -1153,10 +1166,9 @@ console.log(refinementFilters);
                 }
             });
 
-            // We use the 'UniqueID' as an unique identifier since this property is always present in the metadata
             if (properties.length > 0) {
                 resultsToLocalize.push({
-                    uniqueIdentifier: result.UniqueID,
+                    uniqueIdentifier: index,
                     properties: properties
                 });
             }
@@ -1230,10 +1242,10 @@ console.log(refinementFilters);
             });
 
             // Step #3: populate corresponding properties with term labels and returns new results
-            updatedResults = rawResults.map((result) => {
+            updatedResults = rawResults.map((result, index) => {
 
                 const existingResults = localizedTerms.filter((e) => {
-                    return e.uniqueIdentifier === result.UniqueID;
+                    return e.uniqueIdentifier === index;
                 });
 
                 if (existingResults.length > 0) {
