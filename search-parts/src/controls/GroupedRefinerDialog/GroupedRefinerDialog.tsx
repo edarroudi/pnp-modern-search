@@ -1,14 +1,14 @@
 import * as React from 'react';
 import { Suspense } from 'react';
-import { Dialog, DialogType, DialogFooter } from 'office-ui-fabric-react';
+import { Dialog, DialogType, DialogFooter, TagPicker, ComboBox, IComboBox, IComboBoxOption, TagItem, ITag, ValidationState } from 'office-ui-fabric-react';
 import { ButtonType, PrimaryButton } from 'office-ui-fabric-react';
 import { IGroupedRefinerDialogProps } from './IGroupedRefinerDialogProps';
 import { IGroupedRefinerDialogState } from './IGroupedRefinerDialogState';
 import styles from './GroupedRefinerDialog.module.scss';
-
 import { TextField } from 'office-ui-fabric-react';
 import { Icon } from 'office-ui-fabric-react';
-const AceEditor = React.lazy(() => import('react-ace'));
+import { FieldCollectionData, CustomCollectionFieldType } from '@pnp/spfx-controls-react/lib/FieldCollectionData';
+import NoSuggestionTagPicker from './NoSuggestionTagPicker';
 
 export default class GroupedRefinerDialog extends React.Component<IGroupedRefinerDialogProps, IGroupedRefinerDialogState> {
 
@@ -20,110 +20,84 @@ export default class GroupedRefinerDialog extends React.Component<IGroupedRefine
 	constructor(props: IGroupedRefinerDialogProps, state: IGroupedRefinerDialogState) {
 		super(props);
 		this.state = {
-			dialogText: this.props.dialogTextFieldValue ? this.props.dialogTextFieldValue : "",
-			showDialog: false
+			options: this.getDialogOptions()
 		};
 	}
 
-
-	/*************************************************************************************
-	 * Shows the dialog
-	 *************************************************************************************/
-	private showDialog() {
-		this.setState({ dialogText: this.state.dialogText ? this.state.dialogText : "", showDialog: true });
+	private getDialogOptions() {
+		/*	return this.props.dialogTextFieldValue?.split(',').filter((value, index, self) => {
+				return self.indexOf(value) === index && value !== '';
+			}).map(_ => { return { key: _, name: _, selected: true }; }) ?? [];*/
+		const c = JSON.parse(this.props.dialogTextFieldValue);
+		return c;
 	}
-
-
-	/*************************************************************************************
-	 * Notifies the parent with the dialog's latest value, then closes the dialog
-	 *************************************************************************************/
-	private saveDialog() {
-		this.setState({ dialogText: this.state.dialogText ? this.state.dialogText : "", showDialog: false });
-
-		if (this.props.onChanged) {
-			this.props.onChanged(this.state.dialogText);
-		}
-	}
-
-
-	/*************************************************************************************
-	 * Closes the dialog without notifying the parent for any changes
-	 *************************************************************************************/
-	private cancelDialog() {
-		this.setState({ dialogText: this.props.dialogTextFieldValue ? this.props.dialogTextFieldValue : "", showDialog: false });
-	}
-
-
-	/*************************************************************************************
-	 * Updates the dialog's value each time the textfield changes
-	 *************************************************************************************/
-	private onDialogTextChanged(newValue: string) {
-		this.setState({ dialogText: newValue, showDialog: this.state.showDialog });
-	}
-
 
 	/*************************************************************************************
 	 * Called immediately after updating occurs
 	 *************************************************************************************/
 	public componentDidUpdate(prevProps: IGroupedRefinerDialogProps, prevState: IGroupedRefinerDialogState): void {
 		if (this.props.disabled !== prevProps.disabled || this.props.stateKey !== prevProps.stateKey) {
-			this.setState({ dialogText: this.props.dialogTextFieldValue ? this.props.dialogTextFieldValue : "", showDialog: this.state.showDialog });
+			//	this.setState({ options: this.getDialogOptions() ?? [], showDialog: this.state.showDialog });
+		}
+
+		const asd = JSON.stringify(this.state.options);
+		if (this.props.onChanged && this.props.dialogTextFieldValue !== asd) {
+
+			this.props.onChanged(asd);
 		}
 	}
-
 
 	/*************************************************************************************
 	 * Renders the the GroupedRefinerDialog component
 	 *************************************************************************************/
 	public render() {
 		return (
-			<div>
 
-				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-					<TextField value={this.state.dialogText} readOnly={true} styles={{ root: { width: '100%', marginRight: 15, fontSize: 'small', fontFamily: 'Courier New' } }} />
-					<Icon iconName='CodeEdit' onClick={this.showDialog.bind(this)} styles={{ root: { fontSize: 20, cursor: 'pointer' } }} />
-				</div>
+			<FieldCollectionData
+				key={"FieldCollectionData"}
+				manageBtnLabel={"Manage"}
+				saveAndAddBtnLabel={"Save and Add"}
+				onChanged={(value) => {
+					this.setState({ options: value });
+				}}
+				panelHeader={"Manage Groups"}
+				enableSorting={true}
 
-				<Dialog hidden={!this.state.showDialog}
-					dialogContentProps={{
-						subText: this.props.strings.dialogTitle,
-						type: DialogType.normal
-					}}
-					onDismiss={this.cancelDialog.bind(this)}
-					title={this.props.strings.dialogTitle}
+				itemsPerPage={10}
+				fields={[
+					{ id: "label", title: "Group Label", type: CustomCollectionFieldType.string, required: true },
+					{ id: "advanced", title: "Advanced", type: CustomCollectionFieldType.boolean, defaultValue: false },
+					{
+						id: "text",
+						title: "Values",
+						type: CustomCollectionFieldType.custom,
+						onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
 
-					modalProps={
-						{
-							isBlocking: true,
-							containerClassName: 'ms-dialogMainOverride ' + styles.GroupedRefinerDialog,
+
+							return (
+								!item.advanced ?
+									(<NoSuggestionTagPicker
+										key={itemId}
+										value={value ?? ''}
+										onChanged={(items) => {
+
+											if (!items) {
+												onError(field.id, "Values need to be filled");
+											} else {
+												onError(field.id, "");
+												onUpdate("text", items);
+											}
+
+										}}
+
+									/>) :
+									<TextField multiline />
+							);
 						}
-					}>
-					<Suspense fallback={""}>
-						<AceEditor
-							width="600px"
-							mode={this.props.language ? this.props.language : 'html'}
-							theme="monokai"
-							enableLiveAutocompletion={false}
-							showPrintMargin={false}
-							showGutter={true}
-							onChange={this.onDialogTextChanged.bind(this)}
-							value={this.state.dialogText}
-							highlightActiveLine={true}
-							editorProps={
-								{
-									$blockScrolling: Infinity
-								}
-							}
-							name="CodeEditor"
-							enableBasicAutocompletion={true}
-						/>
-					</Suspense>
-					<DialogFooter>
-						<PrimaryButton buttonType={ButtonType.primary} onClick={this.saveDialog.bind(this)}>{this.props.strings.saveButtonText}</PrimaryButton>
-						<PrimaryButton onClick={this.cancelDialog.bind(this)}>{this.props.strings.cancelButtonText}</PrimaryButton>
-					</DialogFooter>
-				</Dialog>
-			</div>
+					}
+				]}
+				value={this.state.options}
+			/>
 		);
 	}
 }

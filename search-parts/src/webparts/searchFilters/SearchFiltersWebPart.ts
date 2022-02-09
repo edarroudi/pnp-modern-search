@@ -60,7 +60,7 @@ export default class SearchFiltersWebPart extends BaseWebPart<ISearchFiltersWebP
     private _propertyFieldCodeEditorLanguages: any = null;
     private _customCollectionFieldType: any = null;
     private _propertyPanePropertyEditor = null;
-    private _textDialogComponent: any = null;
+    private _groupedRefinerDialogComponent: any = null;
 
     /**
      * Properties to avoid to recreate instances every render
@@ -834,14 +834,14 @@ export default class SearchFiltersWebPart extends BaseWebPart<ISearchFiltersWebP
                     },
                     {
                         id: 'groupedRefinerValues',
-                        title: 'grouped',
+                        title: 'Grouped Values',
                         type: this._customCollectionFieldType.custom,                        
                         onCustomRender: ((field, value, onUpdate) => {
                             return (
                                 React.createElement("div", null,
-                                    React.createElement(this._textDialogComponent.TextDialog, {
+                                    React.createElement(this._groupedRefinerDialogComponent.GroupedRefinerDialog, {
                                         language: this._propertyFieldCodeEditorLanguages.Handlebars,
-                                        dialogTextFieldValue: value ? value : 'empty',
+                                        dialogTextFieldValue: value ,
                                         onChanged: (fieldValue) => onUpdate(field.id, fieldValue),
                                         strings: {
                                             cancelButtonText: 'cancel',
@@ -1083,9 +1083,9 @@ export default class SearchFiltersWebPart extends BaseWebPart<ISearchFiltersWebP
         this._propertyPanePropertyEditor = PropertyPanePropertyEditor;
 
          // Code editor component for property pane controls
-         this._textDialogComponent = await import(
+         this._groupedRefinerDialogComponent = await import(
             /* webpackChunkName: 'pnp-modern-search-property-pane' */
-            '../../controls/TextDialog'
+            '../../controls/GroupedRefinerDialog'
         );
 
         this.propertyPaneConnectionsFields = await this.getConnectionOptionsFields();
