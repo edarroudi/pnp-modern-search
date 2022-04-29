@@ -11,6 +11,21 @@ export enum QueryTextSource {
     DynamicValue 
 }
 
+export enum TagetAudianceRuleOperator
+{
+    Eq,
+    Neq,
+    In,
+    NotIn    
+}
+
+export interface ITargetAudienceRule
+{        
+    leftHand:string;
+    operator: TagetAudianceRuleOperator;
+    rightHand:string;
+}
+
 export default interface ISearchResultsWebPartProps extends IBaseWebPartProps {
 
     /**
@@ -166,5 +181,10 @@ export default interface ISearchResultsWebPartProps extends IBaseWebPartProps {
      * Flag indicating if telemetry are enabled
      */
     enableTelemetry: boolean;
+
+    /**
+     * 
+     */
+    targetAudienceRules?: ITargetAudienceRule[];
 }
 
