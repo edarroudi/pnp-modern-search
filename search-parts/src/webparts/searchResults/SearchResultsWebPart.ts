@@ -24,7 +24,7 @@ import {
     DynamicDataSharedDepth,
     PropertyPaneDynamicFieldSet,
 } from "@microsoft/sp-property-pane";
-import ISearchResultsWebPartProps, { QueryTextSource } from './ISearchResultsWebPartProps';
+import ISearchResultsWebPartProps, { QueryTextSource, TagetAudianceRuleOperator } from './ISearchResultsWebPartProps';
 import { AvailableDataSources, BuiltinDataSourceProviderKeys } from '../../dataSources/AvailableDataSources';
 import { ServiceKey } from "@microsoft/sp-core-library";
 import SearchResultsContainer from './components/SearchResultsContainer';
@@ -193,6 +193,10 @@ export default class SearchResultsWebPart extends BaseWebPart<ISearchResultsWebP
      */
     private propertyPaneConnectionsGroup: IPropertyPaneGroup[] = [];
 
+
+    private _showWebpartFromAudienceSetting = true;
+    private _failedAudienceRule:string[] = [];
+
     constructor() {
         super();
 
@@ -241,6 +245,47 @@ export default class SearchResultsWebPart extends BaseWebPart<ISearchResultsWebP
         // Refresh the property pane to get layout and data source options
         if (this.context && this.context.propertyPane && this.context.propertyPane.isPropertyPaneOpen()) {
             this.context.propertyPane.refresh();
+        }
+
+        if(this.properties.targetAudienceRules)
+        {
+
+            this._showWebpartFromAudienceSetting = true;
+            this._failedAudienceRule = [];
+
+            for (const rule of this.properties.targetAudienceRules) {                
+                    const leftHand = await this.tokenService.resolveTokens(rule.leftHand);
+                    const rightHand = await this.tokenService.resolveTokens(rule.rightHand);                    
+                   console.log("X:",`'${leftHand}' ${rule.operator} '${rightHand}'`);
+                    switch((<any>TagetAudianceRuleOperator)[rule.operator])
+                    {
+                        case TagetAudianceRuleOperator.Eq:
+                            this._showWebpartFromAudienceSetting = isEqual(leftHand,rightHand);
+                        break;
+
+                        case TagetAudianceRuleOperator.Neq:
+                            this._showWebpartFromAudienceSetting = !isEqual(leftHand,rightHand);
+                        break;
+
+                        case TagetAudianceRuleOperator.In:
+                            this._showWebpartFromAudienceSetting = rightHand?.split(',').includes(leftHand);
+                        break;
+
+                        case TagetAudianceRuleOperator.NotIn:
+                            this._showWebpartFromAudienceSetting = !rightHand?.split(',').includes(leftHand);
+                        break;
+                        default:
+                            console.error("Unknown op", rule.operator);
+                    }
+                    
+                    if(this._showWebpartFromAudienceSetting) {
+                        console.log("this._showWebpartFromAudienceSetting",this._showWebpartFromAudienceSetting);
+                        break;
+                        
+                    }else{
+                        this._failedAudienceRule.push(`'${leftHand}' ${rule.operator} '${rightHand}'`);                        
+                    }
+            }
         }
 
         return this.renderCompleted();
@@ -374,8 +419,11 @@ export default class SearchResultsWebPart extends BaseWebPart<ISearchResultsWebP
             }
         }
 
+        
+        
+
         // Check if the Web part is connected to a data vertical
-        if (this._verticalsConnectionSourceData && this.properties.selectedVerticalKeys.length > 0) {
+        if (this._showWebpartFromAudienceSetting && this._verticalsConnectionSourceData && this.properties.selectedVerticalKeys.length > 0) {
             const verticalData = DynamicPropertyHelper.tryGetValueSafe(this._verticalsConnectionSourceData);
 
             // Remove the blank space introduced by the control zone when the Web Part displays nothing
@@ -429,6 +477,47 @@ export default class SearchResultsWebPart extends BaseWebPart<ISearchResultsWebP
             }
         }
 
+        if(!this._showWebpartFromAudienceSetting)
+        {
+            // Remove the blank space introduced by the control zone when the Web Part displays nothing
+            // WARNING: in theory, we are not supposed to touch DOM outside of the Web Part root element, This will break if the page attribute change
+            const parentControlZone = this.getParentControlZone();
+            if (this.displayMode === DisplayMode.Edit) {
+
+                if (parentControlZone) {
+                    parentControlZone.removeAttribute('style');
+                }
+
+                // TODO
+                renderRootElement = React.createElement('div', {},
+                    React.createElement(
+                        MessageBar, {
+                        messageBarType: MessageBarType.info,
+                    },
+                    //commonStrings.General.CurrentVerticalNotSelectedMessage
+                        Text.format("Failing Target Audience rules:", ),
+                        this._failedAudienceRule.map(rule=> React.createElement('p',{}, rule))
+                    ),
+                    renderRootElement
+                );
+            } else {
+                renderRootElement = null;
+
+                // Reset data source information
+                this._currentDataResultsSourceData = {
+                    availableFieldsFromResults: [],
+                    availablefilters: []
+                };
+
+                // Remove margin and padding for the empty control zone
+                if (parentControlZone) {
+                    parentControlZone.setAttribute('style', 'margin-top:0px;padding:0px');
+                }
+
+            }
+
+        } 
+       
         // Error message
         if (this.errorMessage) {
             renderRootElement = React.createElement(MessageBar, {
@@ -612,7 +701,8 @@ export default class SearchResultsWebPart extends BaseWebPart<ISearchResultsWebP
                 },
                 {
                     groups: [
-                        ...this.propertyPaneConnectionsGroup
+                        ...this.propertyPaneConnectionsGroup,
+                        ...this.getTargetAudienceGroup()
                     ],
                     displayGroupsAsAccordion: true
                 }
@@ -1090,6 +1180,8 @@ export default class SearchResultsWebPart extends BaseWebPart<ISearchResultsWebP
                 useNextLinks: false
             };
         }
+
+        this.properties.targetAudienceRules = this.properties.targetAudienceRules ? this.properties.targetAudienceRules : [];
     }
 
     /**
@@ -1829,6 +1921,76 @@ export default class SearchResultsWebPart extends BaseWebPart<ISearchResultsWebP
 
         return availableConnectionsGroup;
     }
+
+
+    private getTargetAudienceGroup():IPropertyPaneGroup[] {
+
+        let availableConnectionsGroup: IPropertyPaneGroup[] = [
+            {
+                groupName: "Target Audience", // webPartStrings.PropertyPane.ConnectionsPage.ConnectionsPageGroupName,
+                groupFields: [
+                    ...this.getTargetAudienceFields()
+                ]
+            }
+        ];
+
+        return availableConnectionsGroup;
+    }
+
+    private getTargetAudienceFields(): IPropertyPaneField<any>[] {
+
+        let audienceFields: IPropertyPaneField<any>[] = [
+            this._propertyFieldCollectionData('targetAudienceRules', {
+                manageBtnLabel:  "Manage Target Audience", //commonStrings.PropertyPane.InformationPage.Extensibility.ManageBtnLabel,
+                key: 'targetAudienceRules',
+                enableSorting: true,
+                panelHeader: "Target Audience", //webPartStrings.PropertyPane.InformationPage.Extensibility.PanelHeader,
+                panelDescription: "Enable the webpart for a target audiene", //webPartStrings.PropertyPane.InformationPage.Extensibility.PanelDescription,
+                label: "Target Audience", //commonStrings.PropertyPane.InformationPage.Extensibility.FieldLabel,
+                value: this.properties.targetAudienceRules,
+                fields: [
+                    {
+                        id: 'leftHand',
+                        title:"Property", // commonStrings.PropertyPane.InformationPage.Extensibility.Columns.Name,
+                        type: this._customCollectionFieldType.string,
+                        required:true
+                    },
+                    {
+                        id: 'operator',
+                        title: "Operator", //commonStrings.PropertyPane.InformationPage.Extensibility.Columns.Id,
+                        type: this._customCollectionFieldType.dropdown,                        
+                        options: [{
+                                key: "Eq",
+                                text: "Eq"
+                            },
+                            {
+                                key: "Neq",
+                                text: "Neq"
+                            },
+                            {
+                                key: "In",
+                                text: 'In'
+                            }
+                            ,
+                            {
+                                key: "NotIn",
+                                text: 'NotIn'
+                            }
+                        ],
+                        required:true
+                    },
+                    {
+                        id: 'rightHand',
+                        title: "Value", //commonStrings.PropertyPane.InformationPage.Extensibility.Columns.Name,
+                        type: this._customCollectionFieldType.string
+                    }
+                ]
+            })
+        ];
+
+        return audienceFields;
+    }
+    
 
     /**
      * Gets the data source instance according to the current selected one
