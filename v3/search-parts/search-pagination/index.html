@@ -12,7 +12,7 @@
         <link rel="canonical" href="http://127.0.0.1:8000/v3/search-parts/search-pagination/">
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.2.4">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-7.2.4">
     
     
       
@@ -713,6 +713,18 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../extensibility/custom_layout/" class="md-nav__link">
+        Custom layout
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../extensibility/custom_web_component/" class="md-nav__link">
         Custom web component
       </a>
@@ -739,6 +751,42 @@
     <li class="md-nav__item">
       <a href="../../../extensibility/handlebars_customizations/" class="md-nav__link">
         Custom Handlebars customizations
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extensibility/adaptivecards_customizations/" class="md-nav__link">
+        Custom event handlers for adaptive cards actions
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extensibility/custom_data_source.md" class="md-nav__link">
+        Custom data sources
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extensibility/custom_query_modifications/" class="md-nav__link">
+        Custom query modifier
       </a>
     </li>
   
@@ -831,18 +879,18 @@
 <blockquote>
 <p><strong>This WebPart has been removed since the 3.11.0 version. If you had custom templates and need pagination, add the following code snippet in your template</strong>:</p>
 </blockquote>
-<div class="codehilite"><pre><span></span><code>{{#if @root.paging.showPaging}}
-    &lt;pnp-pagination 
-        data-total-items=&quot;{{@root.paging.totalItemsCount}}&quot; 
-        data-hide-first-last-pages=&quot;{{@root.paging.hideFirstLastPages}}&quot;
-        data-hide-disabled=&quot;{{@root.paging.hideDisabled}}&quot;
-        data-hide-navigation=&quot;{{@root.paging.hideNavigation}}&quot;
-        data-range=&quot;{{@root.paging.pagingRange}}&quot; 
-        data-items-count-per-page=&quot;{{@root.paging.itemsCountPerPage}}&quot; 
-        data-current-page-number=&quot;{{@root.paging.currentPageNumber}}&quot;
-    &gt;
-    &lt;/pnp-pagination&gt;
-{{/if}}
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>{{#if @root.paging.showPaging}}
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    &lt;pnp-pagination 
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        data-total-items=&quot;{{@root.paging.totalItemsCount}}&quot; 
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        data-hide-first-last-pages=&quot;{{@root.paging.hideFirstLastPages}}&quot;
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        data-hide-disabled=&quot;{{@root.paging.hideDisabled}}&quot;
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        data-hide-navigation=&quot;{{@root.paging.hideNavigation}}&quot;
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        data-range=&quot;{{@root.paging.pagingRange}}&quot; 
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        data-items-count-per-page=&quot;{{@root.paging.itemsCountPerPage}}&quot; 
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        data-current-page-number=&quot;{{@root.paging.currentPageNumber}}&quot;
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    &gt;
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    &lt;/pnp-pagination&gt;
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>{{/if}}
 </code></pre></div>
                 
               
@@ -901,7 +949,7 @@
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "instant"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../../assets/javascripts/workers/search.709b4209.min.js", "version": null}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "instant"], "search": "../../../assets/javascripts/workers/search.709b4209.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": null}</script>
     
     
       <script src="../../../assets/javascripts/bundle.febc23d1.min.js"></script>

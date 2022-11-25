@@ -12,7 +12,7 @@
         <link rel="canonical" href="http://127.0.0.1:8000/usage/search-results/tokens/">
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.2.4">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-7.2.4">
     
     
       
@@ -835,6 +835,18 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../extensibility/custom_layout/" class="md-nav__link">
+        Custom layout
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../extensibility/custom_web_component/" class="md-nav__link">
         Custom web component
       </a>
@@ -861,6 +873,42 @@
     <li class="md-nav__item">
       <a href="../../../extensibility/handlebars_customizations/" class="md-nav__link">
         Custom Handlebars customizations
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extensibility/adaptivecards_customizations/" class="md-nav__link">
+        Custom event handlers for adaptive cards actions
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extensibility/custom_data_source.md" class="md-nav__link">
+        Custom data sources
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../extensibility/custom_query_modifications/" class="md-nav__link">
+        Custom query modifier
       </a>
     </li>
   
@@ -1058,10 +1106,10 @@
 <li>Refinement filters field.</li>
 </ul>
 </li>
+<li><strong>Microsoft Search</strong><ul>
+<li>Query template field.</li>
 </ul>
 </li>
-<li>Layouts<ul>
-<li>In the <em>'See all'</em> link.</li>
 </ul>
 </li>
 </ul>
@@ -1075,7 +1123,8 @@
 <li>
 <p><strong>Search Box Web Part</strong></p>
 <ul>
-<li>In the Query input transformation template when sending the query to a new page.</li>
+<li>In the <em>Query input transformation template</em> when sending the query to a new page.</li>
+<li>In the <em>Page URL</em> field.</li>
 </ul>
 </li>
 </ul>
@@ -1115,6 +1164,14 @@
 <tr>
 <td align="left"><strong>{inputQueryText}</strong><br/></td>
 <td align="left">The query value entered into a search box on a page. The value depends on the configuration of input text connection of the Search Results Web Part. <br/></td>
+</tr>
+<tr>
+<td align="left"><strong>{filters.&lt;FilterName&gt;.&lt;|valueAsText|fromDate|toDate\&gt;}</strong></td>
+<td align="left">The current selected filters. <em>'FilterName'</em> corresponds to the filter name specified in the Search Filters Web Part (not the display name). The available values for a filter are as follow: <ul><li><code>valueAsText</code>: the filter value as text. For multi values filter, values will be separated by a comma <code>','</code>.</li><li><code>fromDate</code>: if the filter is a <strong>date range</strong> template, the 'from' date selected by the user in UTC format.</li><li><code>toDate</code>: if the filter is a <strong>date range</strong> template, the 'to' date selected by the user in UTC format.</li></ul></br>If no filter are selected (i.e. no values), the <code>{filters}</code> expression will be resolved as an empty string <code>''</code>.</td>
+</tr>
+<tr>
+<td align="left"><strong>{verticals.&lt;value|name&gt;}</strong></td>
+<td align="left">If connected, get the current selected vertical tab name or associated value.</td>
 </tr>
 </tbody>
 </table>
@@ -1251,7 +1308,6 @@
 <div class="codehilite"><pre><span></span><code>((&lt;property&gt;&lt;operator&gt;&lt;value_1&gt;) OR (&lt;property&gt;&lt;operator&gt;&lt;value_2&gt;) OR (&lt;property&gt;&lt;operator&gt;&lt;value_3&gt;) ...)
 </code></pre></div>
 
-
 <p><strong>Examples:</strong></p>
 <ul>
 <li>Using an user profile multi values taxonomy property: <code>{|owstaxidmetadataalltagsinfo:{User.SPS-Hashtags}}</code></li>
@@ -1351,7 +1407,7 @@
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "instant"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../../assets/javascripts/workers/search.709b4209.min.js", "version": null}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "instant"], "search": "../../../assets/javascripts/workers/search.709b4209.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": null}</script>
     
     
       <script src="../../../assets/javascripts/bundle.febc23d1.min.js"></script>

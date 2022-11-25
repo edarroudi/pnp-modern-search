@@ -12,7 +12,7 @@
         <link rel="canonical" href="http://127.0.0.1:8000/scenarios/edit-templates-using-vscode-and-onedrive/">
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.2.4">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-7.2.4">
     
     
       
@@ -713,6 +713,18 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extensibility/custom_layout/" class="md-nav__link">
+        Custom layout
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extensibility/custom_web_component/" class="md-nav__link">
         Custom web component
       </a>
@@ -739,6 +751,42 @@
     <li class="md-nav__item">
       <a href="../../extensibility/handlebars_customizations/" class="md-nav__link">
         Custom Handlebars customizations
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extensibility/adaptivecards_customizations/" class="md-nav__link">
+        Custom event handlers for adaptive cards actions
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extensibility/custom_data_source.md" class="md-nav__link">
+        Custom data sources
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extensibility/custom_query_modifications/" class="md-nav__link">
+        Custom query modifier
       </a>
     </li>
   
@@ -876,9 +924,9 @@
                 
                 
                 <h1 id="edit-custom-templates-using-visual-studio-code-and-onedrive">Edit custom templates using Visual Studio Code and OneDrive<a class="headerlink" href="#edit-custom-templates-using-visual-studio-code-and-onedrive" title="Permanent link">&para;</a></h1>
-<p>If you want to achieve the following list, dont't stop reading.</p>
+<p>If you want to achieve the following list, don't stop reading.</p>
 <ul>
-<li>You have a local development environment for editing you templates.</li>
+<li>You have a local development environment for editing your templates.</li>
 <li>You can see your changes as fast as you can hit the refresh button in your browser.</li>
 <li>You can see how the template looks in your SharePoint environment.</li>
 <li>You can use real search results as data.</li>
@@ -898,7 +946,7 @@ You do NOT have to use VSCode, you can use any text editor you want.</p>
 <h2 id="steps">Steps<a class="headerlink" href="#steps" title="Permanent link">&para;</a></h2>
 <h3 id="create-the-sharepoint-environment-for-developing-templates">Create the SharePoint environment for developing templates.<a class="headerlink" href="#create-the-sharepoint-environment-for-developing-templates" title="Permanent link">&para;</a></h3>
 <ol>
-<li>Setup a SharePoint site, where you want to store your templates. <a href="../howto-store-custom-templates-in-sharepoint/">Store custom templates in SahrePoint</a></li>
+<li>Setup a SharePoint site, where you want to store your templates. <a href="../howto-store-custom-templates-in-sharepoint/">Store custom templates in SharePoint</a></li>
 <li>Create a page using PnP Search Results. <a href="../create-simple-search-page/">Create a simple search page</a></li>
 <li>Create a custom template and store it in SharePoint. <a href="../create-your-first-custom-template/">Create your first custom template</a></li>
 <li>Configure your search web part to use the new template. (See article in step 3)</li>
@@ -908,7 +956,7 @@ You do NOT have to use VSCode, you can use any text editor you want.</p>
 <li>Open the SharePoint site and library where you have stored your template.</li>
 <li>Choose "Sync" or "Add Shortcut to OneDrive", whatever you prefer.
    <img alt="Sync or add Shortcut to OneDrive" src="../assets/edit-templates-using-vscode-and-onedrive/sync-or-addshortcut-to-onedrive.png" /></li>
-<li>Open VSCode (or any other editor you prefer)</li>
+<li>Open VSCode (or any other editor you prefer).</li>
 <li>Open the synced folder in your OneDrive.</li>
 <li>File - Open Folder</li>
 <li>Select the folder you just synced</li>
@@ -923,12 +971,8 @@ You do NOT have to use VSCode, you can use any text editor you want.</p>
 </ol>
 <p><img alt="Refresh the page and see the result of your changes" src="../assets/edit-templates-using-vscode-and-onedrive/refresh-search-page-and-see-result-of-changes.png" /></p>
 <ol>
-<li>
-<p>You should now see the change you made</p>
-</li>
-<li>
-<p>Repeat 9 - 12, until you are happy with your awesome custom template.</p>
-</li>
+<li>You should now see the change you made.</li>
+<li>Repeat 9 - 12, until you are happy with your awesome custom template.</li>
 </ol>
 <h3 id="troubleshoot">Troubleshoot<a class="headerlink" href="#troubleshoot" title="Permanent link">&para;</a></h3>
 <p>You cannot see any changes on the webpage</p>
@@ -1000,7 +1044,7 @@ Since you are going to use Handlebar you should change the language mode to "Han
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "instant"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.709b4209.min.js", "version": null}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "instant"], "search": "../../assets/javascripts/workers/search.709b4209.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.febc23d1.min.js"></script>
